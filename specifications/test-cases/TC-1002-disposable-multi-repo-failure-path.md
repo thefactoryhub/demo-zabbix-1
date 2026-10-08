@@ -1,34 +1,35 @@
 ---
 id: TC-1002
-title: Multi-repo disposable fails explicitly when secondary cannot be resolved
+title: Multi-repo disposable fails explicitly when repository resolution fails
 kind: test_case
 status: ready
 level: system
 type: functional
 priority: high
 automation: automated
-requirements: []
+requirements: [REQ-0031]
 ---
 
-# TC-1002 Multi-repo disposable fails explicitly when secondary cannot be resolved
+# TC-1002 Multi-repo disposable fails explicitly when repository resolution fails
 
 ## Objective
-Verify the disposable multi-repo marker task errors clearly if the secondary repository cannot be resolved from `.ploqa/workspace.json`.
+Verify that the disposable multi-repo marker task fails clearly when either repository target cannot be resolved from `.ploqa/workspace.json`.
 
 ## Preconditions
-The repository contains `.ploqa/workspace.json` but it is possible to run the task against a modified workspace.json.
+A modified workspace fixture omits the primary or secondary repository entry.
 
 ## Test data
-Workspace variant without repository named `madeup`.
+Temporary workspace JSON with missing repository entries.
 
 ## Steps
 | # | Action | Expected result |
 | --- | --- | --- |
-| 1 | Create a temporary workspace.json that omits the secondary repo entry `madeup`. | Temporary file created. |
-| 2 | Run `python3 .ploqa/disposable_multi_repo_marker.py --workspace-json <temp path>`. | Command fails with a clear error message about missing secondary repo resolution. |
+| 1 | Run the test harness mode that removes the secondary repository entry. | The command fails with an explicit resolution error. |
+| 2 | Run the test harness mode that removes the primary repository entry. | The command fails with an explicit resolution error. |
+| 3 | Run the test harness mode that removes the target directory for either repository. | The command fails with a clear missing-directory error. |
 
 ## Postconditions
-No marker files are written.
+The implementation leaves no partial marker writes behind on failure.
 
 ## Notes
 TC-1002.
@@ -36,4 +37,3 @@ TC-1002.
 ## Discussion
 
 ## Attachments
-

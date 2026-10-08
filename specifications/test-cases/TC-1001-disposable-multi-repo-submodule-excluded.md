@@ -7,7 +7,7 @@ level: system
 type: functional
 priority: high
 automation: automated
-requirements: []
+requirements: [REQ-0031]
 ---
 
 # TC-1001 Multi-repo disposable excludes declared madeup/sub submodule
@@ -37,4 +37,3 @@ TC-1001.
 ## Discussion
 
 ## Attachments
-
