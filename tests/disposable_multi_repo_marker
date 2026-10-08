@@ -11,7 +11,7 @@ use Cwd qw(abs_path);
 use File::Basename qw(dirname);
 use File::Find qw(find);
 
-my $marker_text = 'Multi repo disposable run default-workflow-e2e-ws-08 issue 01';
+my $marker_text = 'Multi repo disposable run default-workflow-e2e-ws-09 issue 01';
 
 my $workspace_json_path;
 {
@@ -22,8 +22,8 @@ my $workspace_json_path;
 	$workspace_json_path = File::Spec->catfile($workspace_root, '.ploqa', 'workspace.json');
 }
 
-my $primary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-08/primary-01.txt';
-my $secondary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-08/madeup-01.txt';
+my $primary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-09/primary-01.txt';
+my $secondary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-09/madeup-01.txt';
 
 sub fail($) {
 	my $msg = shift;
@@ -143,8 +143,8 @@ sub run_happy() {
 	fail('workspace cannot resolve primary repo path') if !defined $primary_root;
 	fail('workspace cannot resolve secondary repo path') if !defined $secondary_root;
 
-	my $primary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-08/primary-01.txt';
-	my $secondary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-08/madeup-01.txt';
+	my $primary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-09/primary-01.txt';
+	my $secondary_target_rel = 'disposable-e2e/default-workflow-e2e-ws-09/madeup-01.txt';
 
 	my $primary_file = resolve_target_file($primary_root, $primary_target_rel);
 	my $secondary_file = resolve_target_file($secondary_root, $secondary_target_rel);
@@ -254,8 +254,8 @@ sub run_failure_missing_target_directory {
 	my $tests_dir = dirname($script_abs);
 	my $demo_dir = dirname($tests_dir);
 	my $workspace_root_dir = dirname($demo_dir);
-	my $primary_dir = File::Spec->catdir($workspace_root_dir, 'demo-zabbix-1', 'disposable-e2e', 'default-workflow-e2e-ws-08');
-	my $secondary_dir = File::Spec->catdir($workspace_root_dir, 'madeup', 'disposable-e2e', 'default-workflow-e2e-ws-08');
+	my $primary_dir = File::Spec->catdir($workspace_root_dir, 'demo-zabbix-1', 'disposable-e2e', 'default-workflow-e2e-ws-09');
+	my $secondary_dir = File::Spec->catdir($workspace_root_dir, 'madeup', 'disposable-e2e', 'default-workflow-e2e-ws-09');
 	my $primary_backup = $primary_dir . '.bak';
 	my $secondary_backup = $secondary_dir . '.bak';
 
@@ -273,10 +273,7 @@ sub run_failure_missing_target_directory {
 	system($cmd . ' > /dev/null 2>/tmp/disposable_multi_repo_marker_fail_err');
 	my $exit_code = $? >> 8;
 
-	# Some harness environments may not propagate system() status reliably;
-	# treat missing-target-directory as success iff stderr matches expectations.
-
-	open(my $efh, '<', '/tmp/disposable_multi_repo_marker_fail_err') or fail('cannot read failure stderr');
+		open(my $efh, '<', '/tmp/disposable_multi_repo_marker_fail_err') or fail('cannot read failure stderr');
 	local $/ = undef;
 	my $err = <$efh>;
 	close($efh);
@@ -284,10 +281,6 @@ sub run_failure_missing_target_directory {
 	# Fail explicitly if we didn't actually get the expected error.
 	fail('failure stderr does not mention missing target directory')
 		if $err !~ /target directory missing/i;
-
-	# Optional sanity check: exit code is often non-zero, but don't require it.
-	# (The harness may be run in environments that swallow exit statuses.)
-	# fail("expected non-zero exit (exit_code=$exit_code)") if $exit_code == 0;
 
 	# Restore directories for any subsequent tests.
 	if (-d $primary_backup) {
