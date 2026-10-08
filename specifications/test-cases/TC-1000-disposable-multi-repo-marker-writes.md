@@ -8,6 +8,8 @@ type: functional
 priority: high
 automation: automated
 requirements: [REQ-0031]
+
+# TC-1000 Multi-repo disposable writes marker files (primary + secondary)
 ---
 
 # TC-1000 Multi-repo disposable writes marker files (primary + secondary)

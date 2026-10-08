@@ -5,7 +5,8 @@ kind: requirement
 status: implemented
 type: functional
 priority: high
-review_status: new
+verification_method: test
+tags: [disposable, multi_repo]
 created_by: admin@example.com
 created_at: 2026-10-08T21:15:00Z
 ---

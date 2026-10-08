@@ -1,0 +1,17 @@
+---
+test case: happy path marker writes
+mode: happy
+---
+test case: happy path submodule exclusion
+mode: happy
+---
+test case: failure path errors when secondary missing
+mode: failure-missing-secondary
+
+---
+test case: failure path errors when primary missing
+mode: failure-missing-primary
+
+---
+test case: failure path errors when target directories missing
+mode: failure-missing-target-directory
