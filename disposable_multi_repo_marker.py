@@ -18,6 +18,14 @@ def _load_workspace(workspace_json: Path) -> dict:
         return json.loads(workspace_json.read_text())
     except FileNotFoundError as exc:
         raise RuntimeError(f"cannot read workspace json: {workspace_json}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"cannot parse workspace json: {workspace_json}") from exc
+
+
+def _workspace_root(workspace_json: Path) -> Path:
+    if workspace_json.name != "workspace.json":
+        raise RuntimeError(f"cannot resolve workspace root from: {workspace_json}")
+    return workspace_json.resolve().parent.parent
 
 
 def _repo_root_by_name(workspace: dict, repo_name: str) -> Path:
@@ -28,6 +36,11 @@ def _repo_root_by_name(workspace: dict, repo_name: str) -> Path:
                 break
             return Path(path)
     raise RuntimeError(f"cannot resolve {repo_name} repo path from workspace.json")
+
+
+def _repo_root(workspace: dict, workspace_root: Path, repo_name: str) -> Path:
+    repo_root = _repo_root_by_name(workspace, repo_name)
+    return workspace_root / repo_root
 
 
 def _target_path(repo_root: Path, relative_path: str) -> Path:
@@ -48,20 +61,17 @@ def _write_marker(target_path: Path, text: str) -> None:
 
 
 def main() -> int:
-    # TC-0001: ws-12 happy path and failure coverage.
+    # TC-0001, TC-0002, TC-0003: ws-13 happy path and failure coverage.
     workspace_json = Path(_workspace_json_from_argv(sys.argv[1:]))
     workspace = _load_workspace(workspace_json)
-    workspace_root = workspace_json.resolve().parent.parent
+    workspace_root = _workspace_root(workspace_json)
 
-    primary_repo = _repo_root_by_name(workspace, workspace.get("primary", ""))
-    secondary_repo = _repo_root_by_name(workspace, "madeup")
+    primary_root = _repo_root(workspace, workspace_root, workspace.get("primary", ""))
+    secondary_root = _repo_root(workspace, workspace_root, "madeup")
+    marker_text = "Multi repo disposable run default-workflow-e2e-ws-13 issue 01"
 
-    primary_root = workspace_root / primary_repo
-    secondary_root = workspace_root / secondary_repo
-    marker_text = "Multi repo disposable run default-workflow-e2e-ws-12 issue 01"
-
-    primary_target = _target_path(primary_root, "disposable-e2e/default-workflow-e2e-ws-12/primary-01.txt")
-    secondary_target = _target_path(secondary_root, "disposable-e2e/default-workflow-e2e-ws-12/madeup-01.txt")
+    primary_target = _target_path(primary_root, "disposable-e2e/default-workflow-e2e-ws-13/primary-01.txt")
+    secondary_target = _target_path(secondary_root, "disposable-e2e/default-workflow-e2e-ws-13/madeup-01.txt")
 
     submodule_root = secondary_root / "sub"
     if not submodule_root.exists():
