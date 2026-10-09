@@ -1,17 +1,18 @@
 ---
-test case: happy path marker writes
+test case: TC-0001 happy path marker writes
 mode: happy
 ---
-test case: happy path submodule exclusion
+test case: TC-0001 happy path submodule exclusion
 mode: happy
 ---
-test case: failure path errors when secondary missing
+test case: TC-0002 failure path errors when secondary missing
 mode: failure-missing-secondary
-
 ---
-test case: failure path errors when primary missing
+test case: TC-0002 failure path errors when primary missing
 mode: failure-missing-primary
-
 ---
-test case: failure path errors when target directories missing
+test case: TC-0002 failure path errors when target directories missing
 mode: failure-missing-target-directory
+---
+test case: TC-0002 failure path errors when submodule guard missing
+mode: failure-missing-submodule-guard

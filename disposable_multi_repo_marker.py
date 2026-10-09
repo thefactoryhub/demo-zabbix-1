@@ -48,9 +48,7 @@ def _write_marker(target_path: Path, text: str) -> None:
 
 
 def main() -> int:
-    # TC-1000: ws-08 happy path.
-    # TC-1001: ws-11 happy path and madeup/sub preservation.
-    # TC-1002: ws-11 explicit resolution and target-dir failures.
+    # TC-0001: ws-12 happy path and failure coverage.
     workspace_json = Path(_workspace_json_from_argv(sys.argv[1:]))
     workspace = _load_workspace(workspace_json)
     workspace_root = workspace_json.resolve().parent.parent
@@ -60,10 +58,10 @@ def main() -> int:
 
     primary_root = workspace_root / primary_repo
     secondary_root = workspace_root / secondary_repo
-    marker_text = "Multi repo disposable run default-workflow-e2e-ws-11 issue 01"
+    marker_text = "Multi repo disposable run default-workflow-e2e-ws-12 issue 01"
 
-    primary_target = _target_path(primary_root, "disposable-e2e/default-workflow-e2e-ws-11/primary-01.txt")
-    secondary_target = _target_path(secondary_root, "disposable-e2e/default-workflow-e2e-ws-11/madeup-01.txt")
+    primary_target = _target_path(primary_root, "disposable-e2e/default-workflow-e2e-ws-12/primary-01.txt")
+    secondary_target = _target_path(secondary_root, "disposable-e2e/default-workflow-e2e-ws-12/madeup-01.txt")
 
     submodule_root = secondary_root / "sub"
     if not submodule_root.exists():

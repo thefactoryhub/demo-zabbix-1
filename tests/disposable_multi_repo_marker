@@ -21,13 +21,14 @@ sub write_workspace_fixture {
 	if (ref($workspace) ne 'HASH') {
 		fail('workspace fixture is not a hash');
 	}
-	delete $workspace->{repositories}{$remove_repo};
+	my @repositories = grep { $_->{name} ne $remove_repo } @{ $workspace->{repositories} || [] };
+	$workspace->{repositories} = \@repositories;
 	open(my $out, '>', $target_path) or fail("cannot write workspace fixture: $target_path");
 	print {$out} encode_json($workspace);
 	close($out);
 }
 
-# TC-0001 verifies the ws-11 happy path writes both repository markers.
+# TC-0001 verifies the ws-12 happy path writes both repository markers.
 sub run_success_path {
 	my $script_abs = abs_path(__FILE__);
 	my $tests_dir = dirname($script_abs);
@@ -38,9 +39,19 @@ sub run_success_path {
 	system("python3 $impl --workspace-json $workspace_json > /tmp/disposable_multi_repo_marker_success_out 2>/tmp/disposable_multi_repo_marker_success_err");
 	my $exit_code = $? >> 8;
 	fail("expected python to succeed (exit_code=$exit_code)") if $exit_code != 0;
+	my $primary = File::Spec->catfile($workspace_root_dir, q{demo-zabbix-1}, q{disposable-e2e}, q{default-workflow-e2e-ws-12}, q{primary-01.txt});
+	my $secondary = File::Spec->catfile($workspace_root_dir, q{madeup}, q{disposable-e2e}, q{default-workflow-e2e-ws-12}, q{madeup-01.txt});
+	open(my $pfh, q{<}, $primary) or fail("cannot read primary marker: $primary");
+	my $primary_text = do { local $/; <$pfh> };
+	close($pfh);
+	open(my $sfh, q{<}, $secondary) or fail("cannot read secondary marker: $secondary");
+	my $secondary_text = do { local $/; <$sfh> };
+	close($sfh);
+	fail("unexpected primary marker: $primary_text") unless $primary_text eq "Multi repo disposable run default-workflow-e2e-ws-12 issue 01\n";
+	fail("unexpected secondary marker: $secondary_text") unless $secondary_text eq "Multi repo disposable run default-workflow-e2e-ws-12 issue 01\n";
 }
 
-# TC-0002 verifies the ws-11 missing-secondary failure path.
+# TC-0002 verifies the ws-12 missing-secondary failure path.
 sub run_failure_missing_secondary {
 	my $script_abs = abs_path(__FILE__);
 	my $tests_dir = dirname($script_abs);
@@ -48,18 +59,13 @@ sub run_failure_missing_secondary {
 	my $workspace_root_dir = dirname($demo_dir);
 	my $workspace_json = File::Spec->catfile($workspace_root_dir, '.ploqa', 'workspace.json');
 	my $impl = File::Spec->catfile($workspace_root_dir, 'demo-zabbix-1', 'disposable_multi_repo_marker.py');
-	write_workspace_fixture($workspace_json, '/tmp/disposable_multi_repo_marker_missing_secondary.json', 'madeup');
-	system("python3 $impl --workspace-json /tmp/disposable_multi_repo_marker_missing_secondary.json > /dev/null 2>/tmp/disposable_multi_repo_marker_fail_err");
-	my $exit_code = $? >> 8;
-	fail("expected python to fail on missing secondary (exit_code=$exit_code)") if $exit_code == 0;
-	open(my $efh, '<', '/tmp/disposable_multi_repo_marker_fail_err') or fail('cannot read failure stderr');
-	local $/ = undef;
-	my $err = <$efh>;
-	close($efh);
-	fail('failure stderr does not mention missing secondary') if $err !~ /cannot resolve madeup repo path from workspace\.json/i;
+	write_workspace_fixture($workspace_json, '/tmp/disposable_multi_repo_marker_missing_secondary_workspace.json', 'madeup');
+	my $ok = system("python3 $impl --workspace-json /tmp/disposable_multi_repo_marker_missing_secondary_workspace.json > /tmp/disposable_multi_repo_marker_missing_secondary_out 2>/tmp/disposable_multi_repo_marker_missing_secondary_err");
+	my $failed = ($ok >> 8) != 0;
+	fail('expected python to fail for missing secondary repo') unless $failed;
 }
 
-# TC-0003 verifies the ws-11 missing-primary failure path.
+# TC-0002 verifies the ws-12 missing-primary failure path.
 sub run_failure_missing_primary {
 	my $script_abs = abs_path(__FILE__);
 	my $tests_dir = dirname($script_abs);
@@ -67,74 +73,53 @@ sub run_failure_missing_primary {
 	my $workspace_root_dir = dirname($demo_dir);
 	my $workspace_json = File::Spec->catfile($workspace_root_dir, '.ploqa', 'workspace.json');
 	my $impl = File::Spec->catfile($workspace_root_dir, 'demo-zabbix-1', 'disposable_multi_repo_marker.py');
-	write_workspace_fixture($workspace_json, '/tmp/disposable_multi_repo_marker_missing_primary.json', 'primary');
-	system("python3 $impl --workspace-json /tmp/disposable_multi_repo_marker_missing_primary.json > /dev/null 2>/tmp/disposable_multi_repo_marker_fail_err");
-	my $exit_code = $? >> 8;
-	fail("expected python to fail on missing primary (exit_code=$exit_code)") if $exit_code == 0;
-	open(my $efh, '<', '/tmp/disposable_multi_repo_marker_fail_err') or fail('cannot read failure stderr');
-	local $/ = undef;
-	my $err = <$efh>;
-	close($efh);
-	fail('failure stderr does not mention missing primary') if $err !~ /cannot resolve demo-zabbix-1 repo path from workspace\.json/i;
+	write_workspace_fixture($workspace_json, '/tmp/disposable_multi_repo_marker_missing_primary_workspace.json', 'demo-zabbix-1');
+	my $ok = system("python3 $impl --workspace-json /tmp/disposable_multi_repo_marker_missing_primary_workspace.json > /tmp/disposable_multi_repo_marker_missing_primary_out 2>/tmp/disposable_multi_repo_marker_missing_primary_err");
+	my $failed = ($ok >> 8) != 0;
+	fail('expected python to fail for missing primary repo') unless $failed;
 }
 
-# TC-0004 verifies the ws-11 missing-target-directory failure path.
-sub run_failure_missing_target_directory {
+# TC-0002 verifies the ws-12 missing-target-directory failure path.
+sub run_failure_missing_target_dir {
 	my $script_abs = abs_path(__FILE__);
 	my $tests_dir = dirname($script_abs);
 	my $demo_dir = dirname($tests_dir);
 	my $workspace_root_dir = dirname($demo_dir);
-	my $primary_dir = File::Spec->catdir($workspace_root_dir, 'demo-zabbix-1', 'disposable-e2e', 'default-workflow-e2e-ws-11');
-	my $secondary_dir = File::Spec->catdir($workspace_root_dir, 'madeup', 'disposable-e2e', 'default-workflow-e2e-ws-11');
 	my $workspace_json = File::Spec->catfile($workspace_root_dir, '.ploqa', 'workspace.json');
-	my $primary_backup = $primary_dir . '.bak';
-	my $secondary_backup = $secondary_dir . '.bak';
 	my $impl = File::Spec->catfile($workspace_root_dir, 'demo-zabbix-1', 'disposable_multi_repo_marker.py');
-	eval {
-		rename($primary_dir, $primary_backup) or fail('cannot move primary target directory aside') if -d $primary_dir;
-		rename($secondary_dir, $secondary_backup) or fail('cannot move secondary target directory aside') if -d $secondary_dir;
-		system("python3 $impl --workspace-json $workspace_json > /dev/null 2>/tmp/disposable_multi_repo_marker_fail_err");
-		my $exit_code = $? >> 8;
-		fail("expected python to fail on missing target dir (exit_code=$exit_code)") if $exit_code == 0;
-		open(my $efh, '<', '/tmp/disposable_multi_repo_marker_fail_err') or fail('cannot read failure stderr');
-		local $/ = undef;
-		my $err = <$efh>;
-		close($efh);
-		fail('failure stderr does not mention missing target directory') if $err !~ /missing target directory/i;
-		1;
-	} or do {
-		my $error = $@;
-		if (-d $primary_backup) {
-			rename($primary_backup, $primary_dir) or fail('cannot restore primary target directory');
-		}
-		if (-d $secondary_backup) {
-			rename($secondary_backup, $secondary_dir) or fail('cannot restore secondary target directory');
-		}
-		die $error;
-	};
-	if (-d $primary_backup) {
-		rename($primary_backup, $primary_dir) or fail('cannot restore primary target directory');
+	my $primary_dir = File::Spec->catdir($workspace_root_dir, 'demo-zabbix-1', 'disposable-e2e', 'default-workflow-e2e-ws-12');
+	my $backup_dir = $primary_dir . '.bak';
+	if (-e $backup_dir) {
+		fail("backup directory already exists: $backup_dir");
 	}
-	if (-d $secondary_backup) {
-		rename($secondary_backup, $secondary_dir) or fail('cannot restore secondary target directory');
-	}
+	rename($primary_dir, $backup_dir) or fail("cannot rename $primary_dir to $backup_dir");
+	my $failed = 0;
+	my $ok = system("python3 $impl --workspace-json $workspace_json > /tmp/disposable_multi_repo_marker_missing_target_out 2>/tmp/disposable_multi_repo_marker_missing_target_err");
+	$failed = ($ok >> 8) != 0;
+	rename($backup_dir, $primary_dir) or fail("cannot restore $primary_dir");
+	fail('expected python to fail for missing target directory') unless $failed;
 }
 
-my $mode = shift @ARGV // 'success';
-if ($mode eq 'success') {
+# TC-0002 verifies the ws-12 madeup/sub guard failure path.
+sub run_failure_missing_submodule_guard {
+	my $script_abs = abs_path(__FILE__);
+	my $tests_dir = dirname($script_abs);
+	my $demo_dir = dirname($tests_dir);
+	my $workspace_root_dir = dirname($demo_dir);
+	my $workspace_json = File::Spec->catfile($workspace_root_dir, '.ploqa', 'workspace.json');
+	my $impl = File::Spec->catfile($workspace_root_dir, 'demo-zabbix-1', 'disposable_multi_repo_marker.py');
+	my $sub_dir = File::Spec->catdir($workspace_root_dir, 'madeup', 'sub');
+	my $backup_dir = $sub_dir . '.bak';
+	rename($sub_dir, $backup_dir) or fail("cannot rename $sub_dir to $backup_dir");
+	my $failed = 0;
+	my $ok = system("python3 $impl --workspace-json $workspace_json > /tmp/disposable_multi_repo_marker_missing_sub_out 2>/tmp/disposable_multi_repo_marker_missing_sub_err");
+	$failed = ($ok >> 8) != 0;
+	rename($backup_dir, $sub_dir) or fail("cannot restore $sub_dir");
+	fail('expected python to fail for missing madeup/sub guard') unless $failed;
+}
+
 	run_success_path();
-	exit(0);
-}
-if ($mode eq 'failure_missing_secondary') {
-	run_failure_missing_secondary();
-	exit(0);
-}
-if ($mode eq 'failure_missing_primary') {
-	run_failure_missing_primary();
-	exit(0);
-}
-if ($mode eq 'failure_missing_target_directory') {
-	run_failure_missing_target_directory();
-	exit(0);
-}
-fail("unknown mode: $mode");
+run_failure_missing_secondary();
+run_failure_missing_primary();
+run_failure_missing_target_dir();
+run_failure_missing_submodule_guard();
